@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Главная</title>
+</head>
+<body>
+
+    <form method="post">
+        <div>
+            <div class="input-group flex-nowrap mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="addon-wrapping">Username</span>
+                </div>
+                <input type="text" class="form-control" placeholder="Username" aria-label="Username" aria-describedby="addon-wrapping" name="user" id="userField">
+            </div>
+            <div class="input-group flex-nowrap">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="addon-wrapping">Message</span>
+                </div>
+                <input type="text" class="form-control" placeholder="Message" aria-label="Message" aria-describedby="addon-wrapping" name="message" id="messageField" >
+            </div>
+            <input type="submit" value="Send" id="submitForm" class="btn btn-dark mt-2" />
+        </div>
+    </form>
+
+    <div id="notify" class="mt-2 card p-2" style="height: 480px; overflow: scroll; overflow-wrap: normal"></div>
+
+    <script src="js/signalr/dist/browser/signalr.min.js"></script>
+    <script>
+        const hubConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/chat")
+            .build();
+        let connectionId = "";
+        document.getElementById("submitForm")
+            .addEventListener("click", function (e) {
+                e.preventDefault();
+
+                let message = document.getElementById("messageField").value;
+                let user = document.getElementById("userField").value;
+
+                message.value = "";
+
+                const data = new FormData();
+                data.append("connectionId", connectionId);
+                data.append("message", message);
+                data.append("user", user);
+
+                fetch("home/create", {
+                    method: "POST",
+                    body: data
+                }).catch(error => console.error("Error: ", error));
+            });
+        hubConnection.on("Notify", function (message) {
+
+            let notify = document.getElementById("notify");
+            let p = document.createElement("p");
+            p.className = message.class;
+            p.appendChild(document.createTextNode("[" + message.userName + "]: " + message.text));
+            notify.appendChild(p);
+        });
+        hubConnection.start().then(() => {
+            console.log(hubConnection.connectionId);
+            connectionId = hubConnection.connectionId;
+        });
+    </script>
+</body>
+</html>
